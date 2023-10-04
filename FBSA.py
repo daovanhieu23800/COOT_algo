@@ -11,17 +11,24 @@ class FBSA_algorithm():
 
     def _update(self, x:np.array):
 
-        updated_bus_data = 1
+        Q_pvu = np.tan(np.arccos(x[1]))*x[0]
+        # print(Q_pvu)
+        updated_bus_data = self.bus_data
+        for i in range(3):
+            # print(updated_bus_data.loc[updated_bus_data['Bus_Number']==x[2,i]])
+            updated_bus_data.loc[updated_bus_data['Bus_Number']==x[2,i], 'Active_Power_P(kW)'] += x[0,i]
+            updated_bus_data.loc[updated_bus_data['Bus_Number']==x[2,i], 'Reactive_Power_Q(kBVar)'] += Q_pvu[i]
+            # print(updated_bus_data.loc[updated_bus_data['Bus_Number']==x[2,i]])
 
-        up_dateted_line_data = 1
 
         #print(x)
-        return self.bus_data, self.line_data
+        return updated_bus_data, self.line_data
+        # return self.bus_data, self.line_data
 
     def _run(self, solution:np.array):
         updated_bus_data, up_dateted_line_data =self._update(solution)
-        bus_np = updated_bus_data.to_numpy().astype(np.float64)
-        line_np = up_dateted_line_data.to_numpy().astype(np.float128)
+        bus_np = updated_bus_data.to_numpy()#.astype(np.float256)
+        line_np = up_dateted_line_data.to_numpy()#.astype(np.float256)
 
         Sbase = 100  # MVA
         Vbase = 12.6   # KV
@@ -35,8 +42,8 @@ class FBSA_algorithm():
         Sload = bus_np[:,1] +1j*bus_np[:,2]
         Z = line_np[:,3] +1j *line_np[:,4]
 
-        V = np.ones(bus_np.shape[0], dtype=np.complex128)
-        Iline = np.zeros(line_np.shape[0], dtype=np.complex128)
+        V = np.ones(bus_np.shape[0], dtype=np.complex256)
+        Iline = np.zeros(line_np.shape[0], dtype=np.complex256)
         Max_iter = 200
         for i in range(Max_iter):
             Iload = np.conj(Sload/V)
@@ -61,9 +68,13 @@ class FBSA_algorithm():
         # print(TPl,TQl)
 
         
-        return Ploss, Qloss, Iline, V
+        return Ploss, Qloss, Iline, V, TPl, TQl
     
-bus_data_default = pd.read_csv('./bus_33_data.csv')
-line_data_default = pd.read_csv('./branch_33_data.csv')
-test = FBSA_algorithm(line_data=line_data_default, bus_data=bus_data_default)
-test._run(np.array([[.6,.7,.8],[1,1,1],[2,10,30]]))
+# bus_data_default = pd.read_csv('./bus_33_data.csv')
+# line_data_default = pd.read_csv('./branch_33_data.csv')
+# test = FBSA_algorithm(line_data=line_data_default, bus_data=bus_data_default)
+# Ploss, Qloss, Iline, V, TPl, TQl = test._run(
+#    np.array([[0.77128536, 0.28854043 ,0.21724623],
+#  [1.    ,     1.     ,    1.        ],
+#  [9.    ,     3.      ,   8.        ]]))
+# print(TPl, TQl)

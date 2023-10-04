@@ -12,30 +12,30 @@ line_data_default = pd.read_csv('./branch_33_data.csv')
 N_bus = 32
 
 ub = np.array([[1,1,1],[1,1,1],[N_bus,N_bus,N_bus]])
-lb = np.array([[0,0,0],[0,0,0],[2,2,2]])
+lb = np.array([[0,0,0],[1,1,1],[2,2,2]])
 dim = (3,3)
-Max_iter = 50
+Max_iter = 20
 N = 10
+fbsa_algo = FBSA_algorithm(line_data=line_data_default, bus_data=bus_data_default)
 
 
 
 def Fitfunction(x:np.array):
     
-    Ploss, Qloss, Iline, V = FBSA(x, fbsa_algo)
+    Ploss, Qloss, Iline, V, TPl, TQl = FBSA(x, fbsa_algo)
   
     # print( Ploss, Qloss, Iline, V)
-    return np.sum(Ploss)+np.sum(x[2])
+    return np.sum(TPl)+100*np.sum(x[2])
 
 
 
 fobj = Fitfunction
 
-fbsa_algo = FBSA_algorithm(line_data=line_data_default, bus_data=bus_data_default)
 def FBSA(solution, fbsa_obj):
     #print('needed FBSA_step to calculate ')
-    Ploss, Qloss, Iline, V = fbsa_obj._run(solution)
+    Ploss, Qloss, Iline, V, TPL, TQL = fbsa_obj._run(solution)
     
-    return Ploss, Qloss, Iline, V
+    return Ploss, Qloss, Iline, V, TPL, TQL
 
 
 def check_and_convert_bound(x:np.array):
@@ -64,8 +64,8 @@ def COOT(N,Max_iter,lb,ub,dim,fobj):
     #if np.isscalar(ub):
         # ub = np.ones((1, dim)) * ub
         # lb = np.ones((1, dim)) * lb
-    ub = np.array([[1,1,1],[1,1,1],[N_bus,N_bus,N_bus]])
-    lb = np.array([[0,0,0],[0,0,0],[2,2,2]])
+    # ub = np.array([[1,1,1],[1,1,1],[N_bus,N_bus,N_bus]])
+    # lb = np.array([[0,0,0],[0,0,0],[2,2,2]])
 
     NLeader = int(np.ceil(0.1*N))
     Ncoot = N - NLeader 
@@ -166,13 +166,18 @@ def COOT(N,Max_iter,lb,ub,dim,fobj):
     
     # return 
 
-solution = np.random.rand(10,3,3)*(ub-lb)+lb
 
-solution[:,2] = solution[:,2].astype(np.int64)
+
 
 
 print('start')
 
-print(COOT(lb=lb, ub=ub, dim=dim, fobj=fobj, N=N, Max_iter=Max_iter))
-
+gBest, gBestScore, Convergence_curve = COOT(lb=lb, ub=ub, dim=dim, fobj=fobj, N=N, Max_iter=Max_iter)
+print(gBest, gBestScore, Convergence_curve)
+Ploss, Qloss, Iline, V, TPl, TQl = fbsa_algo._run(gBest)
+print(TPl, TQl)
+Ploss, Qloss, Iline, V, TPl, TQl = fbsa_algo._run(np.array([[0.77128536, 0.28854043 ,0.21724623],
+ [1.    ,     1.     ,    1.        ],
+ [9.    ,     3.      ,   8.        ]]))
+print(TPl, TQl)
 print('end')
